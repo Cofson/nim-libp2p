@@ -113,6 +113,7 @@ method atEof*(s: BufferStream): bool =
 method readOnce*(
     s: BufferStream, pbytes: pointer, nbytes: int
 ): Future[int] {.async: (raises: [CancelledError, LPStreamError]).} =
+  echo "---------------- bufferstream readOnce 1 --------------"
   doAssert(nbytes > 0, "nbytes must be positive integer")
   doAssert(not s.reading, "Only one concurrent read allowed for stream " & s.shortLog())
 

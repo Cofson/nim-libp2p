@@ -98,6 +98,7 @@ when defined(libp2p_agents_metrics):
 method readOnce*(
     s: ChronosStream, pbytes: pointer, nbytes: int
 ): Future[int] {.async: (raises: [CancelledError, LPStreamError]).} =
+  echo "---------------- chronosstream readOnce 1 --------------"
   if s.atEof:
     raise newLPStreamEOFError()
   withExceptions:

@@ -168,31 +168,43 @@ method readOnce*(
   ## channels are blocked - in particular, this means that reading from one
   ## channel must not be done from within a callback / read handler of another
   ## or the reads will lock each other.
+  echo "---------------- lpchannel readOnce 1 --------------"
   if s.remoteReset:
+    echo "---------------- lpchannel readOnce 2 --------------"
     raise newLPStreamResetError()
   if s.localReset:
+    echo "---------------- lpchannel readOnce 3 --------------"
     raise newLPStreamClosedError()
   if s.atEof():
+    echo "---------------- lpchannel readOnce 4 --------------"
     raise newLPStreamRemoteClosedError()
   if s.conn.closed:
+    echo "---------------- lpchannel readOnce 5 --------------"
     raise newLPStreamConnDownError()
   try:
+    echo "---------------- lpchannel readOnce 6 --------------"
     let bytes = await procCall BufferStream(s).readOnce(pbytes, nbytes)
+    echo "---------------- lpchannel readOnce 7 --------------"
     when defined(libp2p_network_protocols_metrics):
       if s.protocol.len > 0:
         libp2p_protocols_bytes.inc(bytes.int64, labelValues = [s.protocol, "in"])
 
     trace "readOnce", s, bytes
     if bytes == 0:
+      echo "---------------- lpchannel readOnce 8 --------------"
       await s.closeUnderlying()
     return bytes
   except CancelledError as exc:
+    echo "---------------- lpchannel readOnce 9 --------------"
     await s.reset()
+    echo "---------------- lpchannel readOnce 10 --------------"
     raise exc
   except LPStreamError as exc:
     # Resetting is necessary because data has been lost in s.readBuf and
     # there's no way to gracefully recover / use the channel any more
+    echo "---------------- lpchannel readOnce 11 --------------"
     await s.reset()
+    echo "---------------- lpchannel readOnce 12 --------------"
     raise newLPStreamConnDownError(exc)
 
 proc prepareWrite(

@@ -22,6 +22,7 @@ type RelayConnection* = ref object of Connection
 method readOnce*(
     self: RelayConnection, pbytes: pointer, nbytes: int
 ): Future[int] {.async: (raises: [CancelledError, LPStreamError], raw: true).} =
+  echo "---------------- rconn readOnce 1 --------------"
   self.activity = true
   self.conn.readOnce(pbytes, nbytes)
 

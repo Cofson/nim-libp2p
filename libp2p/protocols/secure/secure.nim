@@ -170,6 +170,7 @@ method secure*(
 method readOnce*(
     s: SecureConn, pbytes: pointer, nbytes: int
 ): Future[int] {.async: (raises: [CancelledError, LPStreamError]).} =
+  echo "---------------- secure readOnce 1 --------------"
   doAssert(nbytes > 0, "nbytes must be positive integer")
 
   if s.isEof:

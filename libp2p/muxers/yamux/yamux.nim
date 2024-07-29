@@ -267,36 +267,49 @@ method readOnce*(
 ): Future[int] {.async: (raises: [CancelledError, LPStreamError]).} =
   ## Read from a yamux channel
 
+  echo "---------------- yamux readOnce 1 --------------"
+
   if channel.isReset:
     raise
       if channel.remoteReset:
+        echo "---------------- yamux readOnce 2 --------------"
         newLPStreamResetError()
       elif channel.closedLocally:
+        echo "---------------- yamux readOnce 3 --------------"
         newLPStreamClosedError()
       else:
+        echo "---------------- yamux readOnce 4 --------------"
         newLPStreamConnDownError()
   if channel.isEof:
+    echo "---------------- yamux readOnce 5 --------------"
     raise newLPStreamRemoteClosedError()
   if channel.recvQueue.len == 0:
+    echo "---------------- yamux readOnce 6 --------------"
     channel.receivedData.clear()
     try: # https://github.com/status-im/nim-chronos/issues/516
+      echo "---------------- yamux readOnce 7 --------------"
       discard await race(channel.closedRemotely.wait(), channel.receivedData.wait())
     except ValueError:
+      echo "---------------- yamux readOnce 8 --------------"
       raiseAssert("Futures list is not empty")
     if channel.closedRemotely.isSet() and channel.recvQueue.len == 0:
       channel.isEof = true
+      echo "---------------- yamux readOnce 9 --------------"
       return
         0 # we return 0 to indicate that the channel is closed for reading from now on
 
   let toRead = min(channel.recvQueue.len, nbytes)
 
+  echo "---------------- yamux readOnce 10 --------------"
   var p = cast[ptr UncheckedArray[byte]](pbytes)
   toOpenArray(p, 0, nbytes - 1)[0 ..< toRead] =
     channel.recvQueue.toOpenArray(0, toRead - 1)
   channel.recvQueue = channel.recvQueue[toRead ..^ 1]
 
   # We made some room in the recv buffer let the peer know
+  echo "---------------- yamux readOnce 11 --------------"
   await channel.updateRecvWindow()
+  echo "---------------- yamux readOnce 12 --------------"
   channel.activity = true
   return toRead
 

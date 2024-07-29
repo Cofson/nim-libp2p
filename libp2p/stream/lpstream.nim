@@ -139,12 +139,16 @@ proc readExactly*(
 ): Future[void] {.async: (raises: [CancelledError, LPStreamError]), public.} =
   ## Waits for `nbytes` to be available, then read
   ## them and return them
+  echo "---------------- readExactly 1 --------------"
   if s.atEof:
     var ch: char
+    echo "---------------- readExactly 2 --------------"
     discard await s.readOnce(addr ch, 1)
+    echo "---------------- readExactly 3 --------------"
     raise newLPStreamEOFError()
 
   if nbytes == 0:
+    echo "---------------- readExactly 4 --------------"
     return
 
   logScope:
@@ -152,21 +156,28 @@ proc readExactly*(
     nbytes = nbytes
     objName = s.objName
 
+  echo "---------------- readExactly 5 --------------"
   var pbuffer = cast[ptr UncheckedArray[byte]](pbytes)
   var read = 0
   while read < nbytes and not (s.atEof()):
+    echo "---------------- readExactly 6 --------------"
     read += await s.readOnce(addr pbuffer[read], nbytes - read)
 
+  echo "---------------- readExactly 7 --------------"
   if read == 0:
+    echo "---------------- readExactly 8 --------------"
     doAssert s.atEof()
     trace "couldn't read all bytes, stream EOF", s, nbytes, read
     # Re-readOnce to raise a more specific error than EOF
     # Raise EOF if it doesn't raise anything(shouldn't happen)
     discard await s.readOnce(addr pbuffer[read], nbytes - read)
+    echo "---------------- readExactly 9 --------------"
     warn "Read twice while at EOF"
     raise newLPStreamEOFError()
 
+  echo "---------------- readExactly 10 --------------"
   if read < nbytes:
+    echo "---------------- readExactly 11 --------------"
     trace "couldn't read all bytes, incomplete data", s, nbytes, read
     raise newLPStreamIncompleteError()
 
@@ -203,36 +214,49 @@ proc readVarint*(
 ): Future[uint64] {.async: (raises: [CancelledError, LPStreamError]), public.} =
   var buffer: array[10, byte]
 
+  echo "---------------- readVarint 1 --------------"
   for i in 0 ..< len(buffer):
+    echo "---------------- readVarint 2 --------------"
     await conn.readExactly(addr buffer[i], 1)
+    echo "---------------- readVarint 3 --------------"
 
     var
       varint: uint64
       length: int
     let res = PB.getUVarint(buffer.toOpenArray(0, i), length, varint)
+    echo "---------------- readVarint 4 --------------"
     if res.isOk():
+      echo "---------------- readVarint 5 --------------"
       return varint
     if res.error() != VarintError.Incomplete:
+      echo "---------------- readVarint 6 --------------"
       break
   if true: # can't end with a raise apparently
+    echo "---------------- readVarint 7 --------------"
     raise (ref InvalidVarintError)(msg: "Cannot parse varint")
 
 proc readLp*(
     s: LPStream, maxSize: int
 ): Future[seq[byte]] {.async: (raises: [CancelledError, LPStreamError]), public.} =
   ## read length prefixed msg, with the length encoded as a varint
+  echo "---------------- readLp 1 --------------"
   let
     length = await s.readVarint()
     maxLen = uint64(if maxSize < 0: int.high else: maxSize)
 
+  echo "---------------- readLp 2 --------------"
   if length > maxLen:
+    echo "---------------- readLp 3 --------------"
     raise (ref MaxSizeError)(msg: "Message exceeds maximum length")
 
+  echo "---------------- readLp 4 --------------"
   if length == 0:
     return
 
   var res = newSeqUninitialized[byte](length)
+  echo "---------------- readLp 5 --------------"
   await s.readExactly(addr res[0], res.len)
+  echo "---------------- readLp 6 --------------"
   res
 
 method write*(
